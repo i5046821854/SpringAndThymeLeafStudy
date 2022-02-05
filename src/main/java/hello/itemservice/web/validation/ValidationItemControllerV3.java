@@ -2,6 +2,8 @@ package hello.itemservice.web.validation;
 
 import hello.itemservice.domain.item.Item;
 import hello.itemservice.domain.item.ItemRepository;
+import hello.itemservice.domain.item.SaveCheck;
+import hello.itemservice.domain.item.UpdateCheck;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -41,7 +43,8 @@ public class ValidationItemControllerV3 {
         model.addAttribute("item", new Item());
         return "validation/v3/addForm";
     }
-    @PostMapping("/add")
+
+    //@PostMapping("/add")
     public String addItem(@Validated @ModelAttribute Item item, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {  //@validated가 있어서 자동으로 bean 검증 (item에 annotatiom을 기반으로, 스프링 부트가 자동으로 글로벌 validator로 LocalValidatorFactoryBean을 등록해줌, but, 바인딩 성공한 필드만) / spring boot starter validation 라이브러리를 넣은 후
 
        // itemValidator.validate(item, bindingResult);   //검증 로직 분리
@@ -67,6 +70,33 @@ public class ValidationItemControllerV3 {
         return "redirect:/validation/v3/items/{itemId}";
     }
 
+    @PostMapping("/add")
+    public String addItemV2(@Validated(SaveCheck.class) @ModelAttribute Item item, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {  //saveCheck의 애노테이션만 검증되도록 설정 / 하지만 잘 안씀
+
+        // itemValidator.validate(item, bindingResult);   //검증 로직 분리
+        // @initBinder에서 검증을 @Validated에 대한 검증을 진행해줘서 bindingResult에 담음
+
+        if (item.getPrice() != null && item.getQuantity() != null){   //object에러를 애노테이션으로 하는 것은 취약점이 많음. 얘는 자바 코드로 구현하는 것이 나을듯!
+            int resultPrice = item.getPrice() * item.getQuantity();
+            if(resultPrice < 10000)
+            {
+                bindingResult.reject("totalPriceMin", "가격 * 수량의 합은 10000 이상이어야함. 현재 값 = " + resultPrice);
+            }
+        }
+
+        if(bindingResult.hasErrors())
+        {
+            log.info("errors = {}", bindingResult);
+            return "validation/v3/addForm";   //bindingResult는 모델에 안 담고 바로 보내도 뷰에서 보임
+        }
+
+        Item savedItem = itemRepository.save(item);
+        redirectAttributes.addAttribute("itemId", savedItem.getId());
+        redirectAttributes.addAttribute("status", true);
+        return "redirect:/validation/v3/items/{itemId}";
+    }
+
+
 
     @GetMapping("/{itemId}/edit")
     public String editForm(@PathVariable Long itemId, Model model) {
@@ -75,7 +105,7 @@ public class ValidationItemControllerV3 {
         return "validation/v3/editForm";
     }
 
-    @PostMapping("/{itemId}/edit")
+    //@PostMapping("/{itemId}/edit")
     public String edit(@PathVariable Long itemId, @Validated @ModelAttribute Item item, BindingResult bindingResult) {
 
         if (item.getPrice() != null && item.getQuantity() != null){   //object에러를 애노테이션으로 하는 것은 취약점이 많음. 얘는 자바 코드로 구현하는 것이 나을듯!
@@ -96,6 +126,29 @@ public class ValidationItemControllerV3 {
         itemRepository.update(itemId, item);
         return "redirect:/validation/v3/items/{itemId}";
     }
+
+    @PostMapping("/{itemId}/edit")
+    public String editV2(@PathVariable Long itemId, @Validated(UpdateCheck.class) @ModelAttribute Item item, BindingResult bindingResult) {
+
+        if (item.getPrice() != null && item.getQuantity() != null){   //object에러를 애노테이션으로 하는 것은 취약점이 많음. 얘는 자바 코드로 구현하는 것이 나을듯!
+            int resultPrice = item.getPrice() * item.getQuantity();
+            if(resultPrice < 10000)
+            {
+                bindingResult.reject("totalPriceMin", "가격 * 수량의 합은 10000 이상이어야함. 현재 값 = " + resultPrice);
+            }
+        }
+
+        if(bindingResult.hasErrors())
+        {
+            log.info("errors = {}", bindingResult);
+            return "validation/v3/editForm";   //bindingResult는 모델에 안 담고 바로 보내도 뷰에서 보임
+        }
+
+
+        itemRepository.update(itemId, item);
+        return "redirect:/validation/v3/items/{itemId}";
+    }
+
 
 }
 
