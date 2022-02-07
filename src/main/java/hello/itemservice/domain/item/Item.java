@@ -19,7 +19,7 @@ public class Item {
     private String itemName;
 
 //    @NotNull(groups ={UpdateCheck.class, SaveCheck.class} )  //validator 애노테이션 사용 검증
-//    @Range(min = 1000, max = 1000000, groups = {UpdateCheck.class, SaveCheck.class})
+ //    @Range(min = 1000, max = 1000000, groups = {UpdateCheck.class, SaveCheck.class})
     private Integer price;
 
 //    @NotNull(groups = {UpdateCheck.class, SaveCheck.class})
